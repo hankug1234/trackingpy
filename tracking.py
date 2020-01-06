@@ -103,6 +103,7 @@ class points:
 
         del current.list[0:]
         current.list = new_l
+        current.length = len(new_l)
 
 
 
@@ -227,6 +228,93 @@ class tracking:
         self.t4 = t4
 
     def run(self,past,current):
+        C = list()
+        I = list()
+        state_id = list()
+
+        for i in range(0, past.length):
+            C.append(table(0))
+            state_id.append(id_state( past.list[i].id,0))
+
+        for i in range(0, current.length):
+            I.append(table(0))
+
+        table.init_c(C)
+        table.init_i(I,past.list)
+
+        for i in range(0, past.length):
+            for j in range(0, current.length):
+                d1 = Location.distance(past.list[i].p,current.list[j].p)
+                d2 = math.fabs(past.list[i].r - d1)
+                past.list[i].distance = d2
+                if(d2 < self.margin):
+                    if((past.list[i].direction.x != 0.0)and(past.list[i].direction.y != 0.0)):
+                        if(Location.in_direction(past.list[i].direction, Location.sub(current.list[j].p,past.list[i].p)) == True):
+                            table.add_c(C,j,past.list[i])
+                    else:
+                        table.add_c(C,j,past.list[i])
+
+        while(table.is_all_zero(C) == False):
+            for i in range(0, current.length):
+                if(C[i].box != 0):
+                    table.insert_i(I,C[i].list[0])
+
+            for i in range(0, past.length):
+                s = False
+                for j in range(0,len(I[i].list)):
+                    if(C[I[i].list[j].id].box == 1):
+                        s = True
+                        num = I[i].list[j].id
+                        current.list[num].id = I[i].box
+                        current.list[num].distance = I[i].list[j].distance
+                        new_l = Location(-I[i].list[j].p.x + current.list[num].p.x, -I[i].list[j].p.y + current.list[num].p.y)
+                        current.list[num].direction = new_l
+                        current.list[num].r = self.alpha*I[i].list[j].r + ((1 - self.alpha)*math.sqrt((new_l.x**2)+(new_l.y**2)))
+                        id_state.state_change(state_id,I[i].box,1)
+                        table.delet_all(C,num)
+                        break
+
+                if(s == True):
+                    if(I[i].box != 0):
+                        num = I[i].list[0].id
+                        current.list[num].id = I[i].box
+                        current.list[num].distance = I[i].list[0].distance
+                        new_l = Location(-I[i].list[0].p.x + current.list[I[i].list[0].id].p.x,-I[i].list[0].p.y + current.list[I[i].list[0].id].p.y)
+                        current.list[num].direction = new_l
+                        current.list[num].r = self.alpha*I[i].list[0].r + ((1 - self.alpha)*math.sqrt((new_l.x**2)+(new_l.y**2)))
+                        id_state.state_change(C,num)
+                    table.delet_all(I,i)
+
+            for i in range(0, past.length):
+                    if(state_id[i].state == 1):
+                        for j in range(0, current.length):
+                           table.delet_c(C[j],state_id[i].id)
+
+        for i in range(0, current.length):
+            if( current.list[i].id == -1):
+                current.list[i].id = self.id_list.get_id()
+                current.list[i].r = self.dr
+                dd = Location(0.0,0.0)
+                current.list[i].direction = dd
+                current.list[i].distance = 0.0
+
+            if(Location.in_threshold(current.list[i].p,self.t1,self.t2,self.t3,self.t4) == False):
+                self.id_list.free_id(current.list[i].id)
+                current.list[i].id = -1
+
+        for i in range(0, past.length):
+            if(state_id[i].state == 0):
+                self.id_list.free_id(state_id[i].id)
+
+
+
+
+
+
+
+
+
+
         
 
 
