@@ -122,11 +122,11 @@ class table:
 
     def add_c(self,data):
         new_d = point(data.id,data.p,data.direction,data.r,data.distance)
-        if(len(self.list == 0)):
+        if(len(self.list) == 0):
             self.list.append(new_d)
         else:
             state = 0
-            for i in range(0,len(list)):
+            for i in range(0,len(self.list)):
                 if(self.list[i].distance >= new_d.distance):
                     state = 1
                     self.list.insert(i,new_d)
@@ -137,11 +137,11 @@ class table:
 
     def add_i(self, data, current):
         new_d = point(current, data.p, data.direction, data.r, data.distance)
-        if (len(self.list == 0)):
+        if (len(self.list) == 0):
             self.list.append(new_d)
         else:
             state = 0
-            for i in range(0, len(list)):
+            for i in range(0, len(self.list)):
                 if (self.list[i].distance >= new_d.distance):
                     state = 1
                     self.list.insert(i, new_d)
@@ -233,11 +233,11 @@ class tracking:
         state_id = list()
 
         for i in range(0, past.length):
-            C.append(table(0))
-            state_id.append(id_state( past.list[i].id,0))
+            C.append(table(0,list()))
+            state_id.append(id_state(past.list[i].id,0))
 
         for i in range(0, current.length):
-            I.append(table(0))
+            I.append(table(0,list()))
 
         table.init_c(C)
         table.init_i(I,past.list)
@@ -250,14 +250,14 @@ class tracking:
                 if(d2 < self.margin):
                     if((past.list[i].direction.x != 0.0)and(past.list[i].direction.y != 0.0)):
                         if(Location.in_direction(past.list[i].direction, Location.sub(current.list[j].p,past.list[i].p)) == True):
-                            table.add_c(C,j,past.list[i])
+                            C[j].add_c(past.list[i])
                     else:
-                        table.add_c(C,j,past.list[i])
+                        C[j].add_c(past.list[i])
 
         while(table.is_all_zero(C) == False):
             for i in range(0, current.length):
                 if(C[i].box != 0):
-                    table.insert_i(I,C[i].list[0])
+                    table.insert_i(I,C[i].list[0],i)
 
             for i in range(0, past.length):
                 s = False
@@ -274,21 +274,22 @@ class tracking:
                         table.delet_all(C,num)
                         break
 
-                if(s == True):
-                    if(I[i].box != 0):
+                if(s == False):
+                    if(len(I[i].list) > 0):
                         num = I[i].list[0].id
                         current.list[num].id = I[i].box
                         current.list[num].distance = I[i].list[0].distance
                         new_l = Location(-I[i].list[0].p.x + current.list[I[i].list[0].id].p.x,-I[i].list[0].p.y + current.list[I[i].list[0].id].p.y)
                         current.list[num].direction = new_l
                         current.list[num].r = self.alpha*I[i].list[0].r + ((1 - self.alpha)*math.sqrt((new_l.x**2)+(new_l.y**2)))
-                        id_state.state_change(C,num)
-                    table.delet_all(I,i)
+                        id_state.state_change(state_id,num,1)
+                        table.delet_all(C,num)
+                table.delet_all(I,i)
 
             for i in range(0, past.length):
                     if(state_id[i].state == 1):
                         for j in range(0, current.length):
-                           table.delet_c(C[j],state_id[i].id)
+                           C[j].delet_c(state_id[i].id)
 
         for i in range(0, current.length):
             if( current.list[i].id == -1):
