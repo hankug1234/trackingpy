@@ -1,14 +1,11 @@
 import math
-class Location:
-    def __init__(self,x,y):
-        self.x = x
-        self.y = y
+class tool:
 
     @staticmethod
     def in_direction(a,b):
-        ab = a.x*b.x + a.y*b.y
-        abs_a = math.sqrt(a.x**2 + a.y**2)
-        abs_b = math.sqrt(b.x**2 + b.y**2)
+        ab = a[0]*b[0] + a[1]*b[1]
+        abs_a = math.sqrt(a[0]**2 + a[1]**2)
+        abs_b = math.sqrt(b[0]**2 + b[1]**2)
 
         if(ab == 0):
             return True
@@ -20,33 +17,37 @@ class Location:
 
     @staticmethod
     def distance(zero,a):
-        x = zero.x - a.x
-        y = zero.y - a.y
+        x = zero[0] - a[0]
+        y = zero[1] - a[1]
         return math.fabs(math.sqrt(x**2 + y**2))
 
     @staticmethod
     def sub(a,b):
-        re = Location(a.x - b.x,a.y - b.y)
+        re = [a[0] - b[0],a[1] - b[1]]
         return re
 
     @staticmethod
     def normalize(a):
-        d = math.sqrt(a.x**2 + a.y**2)
-        re = Location(a.x/d,a.y/d)
+        d = math.sqrt(a[0]**2 + a[1]**2)
+        re = [a[0]/d,a[1]/d]
         return re
 
     @staticmethod
+    def g_length(a):
+        return math.sqrt(a[0]**2 + a[1]**2)
+
+    @staticmethod
     def cross_multiple(a,b):
-        return a.x*b.y - a.y*b.x
+        return a[0]*b[1] - a[1]*b[0]
 
     @staticmethod
     def ccw(a,c,d):
-        n1 = Location.sub(c,a)
-        n2 = Location.sub(d,a)
-        n1 = Location.normalize(n1)
-        n2 = Location.normalize(n2)
+        n1 = tool.sub(c,a)
+        n2 = tool.sub(d,a)
+        n1 = tool.normalize(n1)
+        n2 = tool.normalize(n2)
 
-        cross_v = Location.cross_multiple(n1,n2)
+        cross_v = tool.cross_multiple(n1,n2)
 
         if(cross_v>0):
             return -1
@@ -57,163 +58,126 @@ class Location:
 
     @staticmethod
     def in_threshold(p,t1,t2,t3,t4):
-        c1 = Location.ccw(t1,t2,p)
-        c2 = Location.ccw(t2,t3,p)
-        c3 = Location.ccw(t3,t4,p)
-        c4 = Location.ccw(t4,t1,p)
+        c1 = tool.ccw(t1,t2,p)
+        c2 = tool.ccw(t2,t3,p)
+        c3 = tool.ccw(t3,t4,p)
+        c4 = tool.ccw(t4,t1,p)
         if(c1 == 1):
             if(c2 == 1):
                 if(c3 == 1):
                     if(c4 == 1):
                         return True
         return False
-
-
-class point:
-    def __init__(self,id,p,direction,r,distance):
-        self.id = id
-        self.p = p
-        self.direction = direction
-        self.r = r
-        self.distance = distance
-
-class points:
-    def __init__(self,length = 0,list = list()):
-        self.length = length
-        self.list = list
-
-    def make_init_points(self,p_list,id_list,r):
-        self.length = len(p_list)
-        for i in range(0,len(p_list)):
-            new_d = point(id_list.get_id(),Location(p_list[i].x,p_list[i].y),Location(0.0,0.0),r,0.0)
-            self.list.append(new_d)
-
-    def make_points(self,p_list):
-        self.length = len(p_list)
-        for i in range(0, len(p_list)):
-            new_d = point(-1,Location(p_list[i].x,p_list[i].y),Location(0.0,0.0),0.0,0.0)
-            self.list.append(new_d)
+    @staticmethod
+    def init_id_state(id_state,past_list):
+        for current in past_list:
+            id_state[current.id] = 0
 
     @staticmethod
-    def make_current_to_past(current):
-        new_l = list()
-        for i in range(0,len(current.list)):
-            if(current.list[i].id != -1):
-                new_l.append(point(current.list[i].id,current.list[i].p,current.list[i].direction,current.list[i].r,current.list[i].distance))
+    def init_current_table(current_table, current_list):
+        for index, current in enumerate(current_list):
+            current_table[index] = list()
 
-        del current.list[0:]
-        current.list = new_l
-        current.length = len(new_l)
-
-
-
-class table:
-    def __init__(self,box,list=list()):
-        self.box = box
-        self.list = list
     @staticmethod
-    def init_c(list):
-        for i in range(0,len(list)):
-            list[i].box = 0
-    @staticmethod
-    def init_i(list1,list2):
-        for i in range(0, len(list1)):
-            list1[i].box = list2[i].id
+    def init_past_table(past_table, past_list):
+        for past in past_list:
+            past_table[past.id] = list()
 
-    def add_c(self,data):
-        new_d = point(data.id,data.p,data.direction,data.r,data.distance)
-        if(len(self.list) == 0):
-            self.list.append(new_d)
+    @staticmethod
+    def add_table(table, table_id, data):
+        new_point = point(data.id, data.location, data.direction, data.r, data.distance, data.b_box)
+        new_point.set_temporary_id(data.temporary_id)
+        if (len(table[table_id]) == 0):
+            table[table_id].append(new_point)
         else:
-            state = 0
-            for i in range(0,len(self.list)):
-                if(self.list[i].distance >= new_d.distance):
-                    state = 1
-                    self.list.insert(i,new_d)
-                    break
-            if(state == 1):
-                self.list.append(new_d)
-        self.box+=1
+            for index,current in enumerate(table[table_id]):
+                if (current.distance >= new_point.distance):
+                    table[table_id].insert(index, new_point)
+                    return
+            table[table_id].append(new_point)
 
-    def add_i(self, data, current):
-        new_d = point(current, data.p, data.direction, data.r, data.distance)
-        if (len(self.list) == 0):
-            self.list.append(new_d)
-        else:
-            state = 0
-            for i in range(0, len(self.list)):
-                if (self.list[i].distance >= new_d.distance):
-                    state = 1
-                    self.list.insert(i, new_d)
-                    break
-            if (state == 1):
-                self.list.append(new_d)
+    @staticmethod
+    def set_current_point_values(current,c_index,past_point,id,alpha,id_state):
+        current.point_list[c_index].id = id
+        current.point_list[c_index].distance = past_point.distance
+        current.point_list[c_index].direction = tool.sub(current.point_list[c_index].location, past_point.location)
+        current.point_list[c_index].r = alpha * past_point.r + (1 - alpha) * tool.g_length(current.point_list[c_index].direction)
+        id_state[id] = 1
 
-    def delet_c(self,id):
-        if(len(self.list) != 0):
-            for i in range(0, len(self.list)):
-                if(self.list[i].id == id):
-                    self.box -=1
-                    return self.list.pop(i)
+    @staticmethod
+    def delete_point_by_id(table,table_id,target_id):
+        if (len(table[table_id]) != 0):
+            for index,current in enumerate(table[table_id]):
+                if (current.id == target_id):
+                    return table[table_id].pop(index)
         return None
 
     @staticmethod
-    def insert_i(list,data,current):
-        for i in range(0,len(list)):
-            if(list[i].box == data.id):
-                list[i].add_i(data,current)
-                break
-
-    @staticmethod
-    def is_all_zero(list):
-        for i in range(0,len(list)):
-            if(list[i].box != 0):
+    def is_all_zero(current_table):
+        current_table_key_list = list(current_table.keys())
+        for key in current_table_key_list:
+            if (len(current_table[key]) != 0):
                 return False
         return True
 
     @staticmethod
-    def delet_all(list,index):
-        del list[index].list[0:]
-        list[index].box = 0
+    def delete_all(table, table_id):
+        del table[table_id][0:]
 
 
-
-
-
-class id_state:
-    def __init__(self,id,state):
+class point:
+    def __init__(self,id,location,direction,r,distance,b_box):
         self.id = id
-        self.state = state
+        self.location = location
+        self.direction = direction
+        self.r = r
+        self.distance = distance
+        self.b_box = b_box
+        self.temporary_id = None
+
+    def set_temporary_id(self,id):
+        self.temporary_id = id
+
+class points:
+    def __init__(self,point_list = list()):
+        self.point_list = point_list
+
+    def make_init_points(self,locations,id_list,r,b_boxs):
+        for index,location in enumerate(locations):
+            new_point = point(id_list.get_id(),[location[0],location[1]],None,r,0.0,b_boxs[index])
+            self.point_list.append(new_point)
+
+    def make_points(self,locations,b_boxs):
+        for index, location in enumerate(locations):
+            new_point = point(None,[location[0],location[1]],None,0.0,0.0,b_boxs[index])
+            self.point_list.append(new_point)
 
     @staticmethod
-    def state_change(list,id,state):
-        for i in range(0,len(list)):
-            if(list[i].id == id):
-                list[i].state = state
+    def make_current_to_past(current):
+        new_point_list = list()
+        for p in current.point_list:
+            if(p.id != None):
+                new_point_list.append(point(p.id,p.location,p.direction,p.r,p.distance,p.b_box))
 
-class id_node:
-    def __init__(self,id):
-        self.id = id
+        del current.point_list[0:]
+        current.point_list = new_point_list
 
 class id_node_list:
-    def __init__(self,max_id = -1,list=list()):
+    def __init__(self,max_id = 100,id_list=range(0,100)):
         self.max_id = max_id
-        self.list = list
+        self.id_list = list(id_list)
 
-    def make_id_node(self):
+    def make_id(self):
         self.max_id+=1
-        re = id_node(self.max_id)
-        self.list.append(re)
+        self.id_list.append(self.max_id)
 
     def get_id(self):
-        if(len(self.list) == 0):
-            self.make_id_node()
-        re = self.list.pop(0)
-        return re.id
+        if(len(self.id_list) == 0):
+            self.make_id()
+        return self.id_list.pop(0)
 
     def free_id(self,id):
-        re = id_node(id)
-        self.list.append(re)
+        self.list.append(id)
 
 
 class tracking:
@@ -226,88 +190,96 @@ class tracking:
         self.t2 = t2
         self.t3 = t3
         self.t4 = t4
+        self.past = points(list())
 
     def run(self,past,current):
-        C = list()
-        I = list()
-        state_id = list()
+        current_table = dict()
+        past_table = dict()
+        id_state = dict()
 
-        for i in range(0, past.length):
-            C.append(table(0,list()))
-            state_id.append(id_state(past.list[i].id,0))
+        tool.init_current_table(current_table,current.point_list)
+        tool.init_past_table(past_table,past.point_list)
+        tool.init_id_state(id_state,past.point_list)
 
-        for i in range(0, current.length):
-            I.append(table(0,list()))
-
-        table.init_c(C)
-        table.init_i(I,past.list)
-
-        for i in range(0, past.length):
-            for j in range(0, current.length):
-                d1 = Location.distance(past.list[i].p,current.list[j].p)
-                d2 = math.fabs(past.list[i].r - d1)
-                past.list[i].distance = d2
-                if(d2 < self.margin):
-                    if((past.list[i].direction.x != 0.0)and(past.list[i].direction.y != 0.0)):
-                        if(Location.in_direction(past.list[i].direction, Location.sub(current.list[j].p,past.list[i].p)) == True):
-                            C[j].add_c(past.list[i])
+        for p_p in past.point_list:
+            for c_index,c_p in enumerate(current.point_list):
+                d1 = tool.distance(p_p.location,c_p.location)
+                d2 = p_p.r - d1
+                p_p.distance = math.fabs(d2)
+                if(d2 < self.margin or d2 >= 0):
+                    if(p_p.direction != None):
+                        if(tool.in_direction(p_p.direction, tool.sub(c_p.location,p_p.location)) == True):
+                            tool.add_table(current_table,c_index,p_p)
                     else:
-                        C[j].add_c(past.list[i])
+                        tool.add_table(current_table,c_index,p_p)
 
-        while(table.is_all_zero(C) == False):
-            for i in range(0, current.length):
-                if(C[i].box != 0):
-                    table.insert_i(I,C[i].list[0],i)
+        current_table_key_list = list(current_table.keys())
+        past_table_key_list = list(past_table.keys())
+        while(tool.is_all_zero(current_table) == False):
+            for key in current_table_key_list:
+                if(len(current_table[key]) != 0):
+                    current_table[key][0].set_temporary_id(key)
+                    tool.add_table(past_table,current_table[key][0].id,current_table[key][0])
 
-            for i in range(0, past.length):
+            for key in past_table_key_list:
                 s = False
-                for j in range(0,len(I[i].list)):
-                    if(C[I[i].list[j].id].box == 1):
+                for p_t_p in past_table[key]:
+                    temporary_id = p_t_p.temporary_id
+                    if(len(current_table[temporary_id]) == 1):
                         s = True
-                        num = I[i].list[j].id
-                        current.list[num].id = I[i].box
-                        current.list[num].distance = I[i].list[j].distance
-                        new_l = Location(-I[i].list[j].p.x + current.list[num].p.x, -I[i].list[j].p.y + current.list[num].p.y)
-                        current.list[num].direction = new_l
-                        current.list[num].r = self.alpha*I[i].list[j].r + ((1 - self.alpha)*math.sqrt((new_l.x**2)+(new_l.y**2)))
-                        id_state.state_change(state_id,I[i].box,1)
-                        table.delet_all(C,num)
+                        tool.set_current_point_values(current, temporary_id, p_t_p, key, self.alpha,id_state)
+                        tool.delete_all(current_table,temporary_id)
                         break
 
                 if(s == False):
-                    if(len(I[i].list) > 0):
-                        num = I[i].list[0].id
-                        current.list[num].id = I[i].box
-                        current.list[num].distance = I[i].list[0].distance
-                        new_l = Location(-I[i].list[0].p.x + current.list[I[i].list[0].id].p.x,-I[i].list[0].p.y + current.list[I[i].list[0].id].p.y)
-                        current.list[num].direction = new_l
-                        current.list[num].r = self.alpha*I[i].list[0].r + ((1 - self.alpha)*math.sqrt((new_l.x**2)+(new_l.y**2)))
-                        id_state.state_change(state_id,num,1)
-                        table.delet_all(C,num)
-                table.delet_all(I,i)
+                    if(len(past_table[key]) > 0):
+                        temporary_id = past_table[key][0].temporary_id
+                        tool.set_current_point_values(current, temporary_id, past_table[key][0], key, self.alpha, id_state)
+                        tool.delete_all(current_table, temporary_id)
 
-            for i in range(0, past.length):
-                    if(state_id[i].state == 1):
-                        for j in range(0, current.length):
-                           C[j].delet_c(state_id[i].id)
+                tool.delete_all(past_table,key)
 
-        for i in range(0, current.length):
-            if( current.list[i].id == -1):
-                current.list[i].id = self.id_list.get_id()
-                current.list[i].r = self.dr
-                dd = Location(0.0,0.0)
-                current.list[i].direction = dd
-                current.list[i].distance = 0.0
+            for c_key in current_table_key_list:
+                for p_key in past_table_key_list:
+                    if(id_state[p_key] == 1):
+                        tool.delete_point_by_id(current_table,c_key,p_key)
 
-            if(Location.in_threshold(current.list[i].p,self.t1,self.t2,self.t3,self.t4) == False):
-                self.id_list.free_id(current.list[i].id)
-                current.list[i].id = -1
+        for index,c_p in enumerate(current.point_list):
+            if( c_p.id == None):
+                current.point_list[index].id = self.id_list.get_id()
+                current.point_list[index].r = self.dr
+                current.point_list[index].direction = None
+                current.point_list[index].distance = 0.0
 
-        for i in range(0, past.length):
-            if(state_id[i].state == 0):
-                self.id_list.free_id(state_id[i].id)
+            if(tool.in_threshold(c_p.location,self.t1,self.t2,self.t3,self.t4) == False):
+                self.id_list.free_id(current.point_list[index].id)
+                current.point_list[index].id = None
 
+        for key in past_table_key_list:
+            if(id_state[key] == 0):
+                self.id_list.free_id(key)
 
+    def perform_custom_tracking(self,detected_object_with_centerbottom):
+       current = points(list())
+       locations = list()
+       b_boxs = list()
+       tracked_object = list()
+
+       for dowc in detected_object_with_centerbottom:
+          b_boxs.append([dowc[0],dowc[1],dowc[2],dowc[3]])
+          locations.append([dowc[4],dowc[5]])
+
+       if len(self.past.point_list) == 0:
+          current.make_init_points(locations,self.id_list,self.dr,b_boxs)
+       else:
+          current.make_points(locations,b_boxs)
+
+       self.run(self.past,current)
+       self.past = points.make_current_to_past(current)
+
+       for p_p in self.past.point_list:
+         tracked_object.append([p_p.b_box[0], p_p.b_box[1], p_p.b_box[2], p_p.b_box[3], p_p.id])
+       return tracked_object
 
 
 
