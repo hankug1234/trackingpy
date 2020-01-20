@@ -16,6 +16,20 @@ class tool:
             return False
 
     @staticmethod
+    def direction_value(a,b):
+        ab = a[0]*b[0] + a[1]*b[1]
+        abs_a = math.sqrt(a[0]**2 + a[1]**2)
+        abs_b = math.sqrt(b[0]**2 + b[1]**2)
+
+        if(ab == 0):
+            return 1.0
+        cos = ab/(abs_a*abs_b)
+        if(cos>=0 and cos <= 0.5):
+            return 0.5
+        else:
+            return 0.75
+
+    @staticmethod
     def distance(zero,a):
         x = zero[0] - a[0]
         y = zero[1] - a[1]
@@ -204,12 +218,13 @@ class tracking:
         for p_p in past.point_list:
             for c_index,c_p in enumerate(current.point_list):
                 d1 = tool.distance(p_p.location,c_p.location)
-                d2 = p_p.r - d1
+                d2 = d1
                 p_p.distance = math.fabs(d2)
-                if(d2 < self.margin or d2 >= 0):
+                if(d2 < (p_p.r + self.margin)):
                     if(p_p.direction != None):
-                        if(tool.in_direction(p_p.direction, tool.sub(c_p.location,p_p.location)) == True):
-                            tool.add_table(current_table,c_index,p_p)
+                        #if(tool.in_direction(p_p.direction, tool.sub(c_p.location,p_p.location)) == True):
+                        p_p.direction = p_p.direction*tool.direction_value(p_p.direction, tool.sub(c_p.location,p_p.location))
+                        tool.add_table(current_table,c_index,p_p)
                     else:
                         tool.add_table(current_table,c_index,p_p)
 
