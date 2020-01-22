@@ -16,20 +16,6 @@ class tool:
             return False
 
     @staticmethod
-    def direction_value(a,b):
-        ab = a[0]*b[0] + a[1]*b[1]
-        abs_a = math.sqrt(a[0]**2 + a[1]**2)
-        abs_b = math.sqrt(b[0]**2 + b[1]**2)
-
-        if(ab == 0):
-            return 1.0
-        cos = ab/(abs_a*abs_b)
-        if(cos>=0 and cos <= 0.5):
-            return 0.5
-        else:
-            return 0.75
-
-    @staticmethod
     def distance(zero,a):
         x = zero[0] - a[0]
         y = zero[1] - a[1]
@@ -39,6 +25,10 @@ class tool:
     def sub(a,b):
         re = [a[0] - b[0],a[1] - b[1]]
         return re
+
+    @staticmethod
+    def add(a,b):
+        return [a[0] + b[0],a[1] + b[1]]
 
     @staticmethod
     def normalize(a):
@@ -191,7 +181,7 @@ class id_node_list:
         return self.id_list.pop(0)
 
     def free_id(self,id):
-        self.list.append(id)
+        self.id_list.append(id)
 
 
 class tracking:
@@ -221,12 +211,7 @@ class tracking:
                 d2 = d1
                 p_p.distance = math.fabs(d2)
                 if(d2 < (p_p.r + self.margin)):
-                    if(p_p.direction != None):
-                        #if(tool.in_direction(p_p.direction, tool.sub(c_p.location,p_p.location)) == True):
-                        p_p.direction = p_p.direction*tool.direction_value(p_p.direction, tool.sub(c_p.location,p_p.location))
-                        tool.add_table(current_table,c_index,p_p)
-                    else:
-                        tool.add_table(current_table,c_index,p_p)
+                    tool.add_table(current_table,c_index,p_p)
 
         current_table_key_list = list(current_table.keys())
         past_table_key_list = list(past_table.keys())
@@ -270,9 +255,13 @@ class tracking:
                 self.id_list.free_id(current.point_list[index].id)
                 current.point_list[index].id = None
 
+        ret = list()
         for key in past_table_key_list:
             if(id_state[key] == 0):
-                self.id_list.free_id(key)
+                #self.id_list.free_id(key)
+                ret.append(key)
+        return ret
+
 
     def perform_custom_tracking(self,detected_object_with_centerbottom):
        current = points(list())
@@ -289,11 +278,22 @@ class tracking:
        else:
           current.make_points(locations,b_boxs)
 
-       self.run(self.past,current)
-       self.past = points.make_current_to_past(current)
+       del_id = self.run(self.past,current)
+       temp_past = points.make_current_to_past(current)
+
+       for t_p_p in temp_past.point_list:
+         tracked_object.append([t_p_p.b_box[0], t_p_p.b_box[1], t_p_p.b_box[2], t_p_p.b_box[3], t_p_p.id])
 
        for p_p in self.past.point_list:
-         tracked_object.append([p_p.b_box[0], p_p.b_box[1], p_p.b_box[2], p_p.b_box[3], p_p.id])
+           if p_p.id in del_id:
+               if p_p.direcion == None:
+                   temp_past.point_list.append(p_p)
+               else:
+                   p_p.location = tool.add(p_p.location,p_p.direction)
+                   temp_past.point_list.append(p_p)
+
+       self.past = temp_past
+
        return tracked_object
 
 
