@@ -138,6 +138,7 @@ class point:
         self.distance = distance
         self.b_box = b_box
         self.temporary_id = None
+        self.count = 0
 
     def set_temporary_id(self,id):
         self.temporary_id = id
@@ -279,18 +280,23 @@ class tracking:
           current.make_points(locations,b_boxs)
 
        del_id = self.run(self.past,current)
-       temp_past = points.make_current_to_past(current)
+       points.make_current_to_past(current)
+       temp_past = current
 
        for t_p_p in temp_past.point_list:
          tracked_object.append([t_p_p.b_box[0], t_p_p.b_box[1], t_p_p.b_box[2], t_p_p.b_box[3], t_p_p.id])
 
        for p_p in self.past.point_list:
            if p_p.id in del_id:
-               if p_p.direcion == None:
+               p_p.count+=1
+               if p_p.count < 10:
+                if p_p.direcion == None:
                    temp_past.point_list.append(p_p)
-               else:
+                else:
                    p_p.location = tool.add(p_p.location,p_p.direction)
                    temp_past.point_list.append(p_p)
+               else:
+                 self.id_list.free_id(p_p.id)
 
        self.past = temp_past
 
