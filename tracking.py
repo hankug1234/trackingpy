@@ -14,6 +14,19 @@ class tool:
             return True
         else:
             return False
+    @staticmethod
+    def direction_point(a,b):
+        ab = a[0] * b[0] + a[1] * b[1]
+        abs_a = math.sqrt(a[0] ** 2 + a[1] ** 2)
+        abs_b = math.sqrt(b[0] ** 2 + b[1] ** 2)
+
+        if (ab == 0):
+            return 1.0
+        cos = ab / (abs_a * abs_b)
+        if(cos<=1 and cos>=0.5):
+            return cos
+        else:
+            return 0.5
 
     @staticmethod
     def distance(zero,a):
@@ -209,9 +222,13 @@ class tracking:
         for p_p in past.point_list:
             for c_index,c_p in enumerate(current.point_list):
                 d1 = tool.distance(p_p.location,c_p.location)
-                d2 = d1
-                p_p.distance = math.fabs(d2)
-                if(d2 < (p_p.r + self.margin)):
+
+                d2 = p_p.r + self.margin
+                if(p_p.direction != None):
+                  d2 = d2 * tool.direction_point(p_p.direction,tool.sub(c_p.location, p_p.location))
+
+                p_p.distance = math.fabs(d1)
+                if(d1 < d2):
                     tool.add_table(current_table,c_index,p_p)
 
         current_table_key_list = list(current_table.keys())
@@ -290,7 +307,7 @@ class tracking:
            if p_p.id in del_id:
                p_p.count+=1
                if p_p.count < 10:
-                if p_p.direcion == None:
+                if p_p.direction == None:
                    temp_past.point_list.append(p_p)
                 else:
                    p_p.location = tool.add(p_p.location,p_p.direction)
